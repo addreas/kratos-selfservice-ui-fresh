@@ -1,0 +1,46 @@
+{
+  "lock": false,
+  "tasks": {
+    "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx",
+    "cli": "echo \"import '\\$fresh/src/dev/cli.ts'\" | deno run --unstable -A -",
+    "manifest": "deno task cli manifest $(pwd)",
+    "start": "deno run -A --watch=static/,routes/ dev.ts",
+    "build": "deno run -A dev.ts build",
+    "preview": "deno run -A main.ts",
+    "update": "deno run -A -r https://fresh.deno.dev/update ."
+  },
+  "lint": {
+    "rules": {
+      "tags": [
+        "fresh",
+        "recommended"
+      ]
+    }
+  },
+  "exclude": [
+    "**/_fresh/*"
+  ],
+  "imports": {
+    "~/": "./",
+    "$fresh/": "https://deno.land/x/fresh@1.6.5/",
+    "$fresh/src/server/deps.ts": "https://raw.githubusercontent.com/adamgreg/fresh_unocss/unocss/src/server/deps.ts",
+    "$fresh/plugins/unocss.ts": "https://raw.githubusercontent.com/adamgreg/fresh_unocss/unocss/plugins/unocss.ts",
+    "preact": "https://esm.sh/preact@10.19.2",
+    "preact/": "https://esm.sh/preact@10.19.2/",
+    "@preact/signals": "https://esm.sh/*@preact/signals@1.2.1",
+    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.0",
+    "unocss": "https://esm.sh/unocss@0.58.5/denonext/unocss.mjs",
+    "@unocss/core": "https://esm.sh/@unocss/core@0.58.5",
+    "@unocss/preset-uno": "https://esm.sh/@unocss/preset-uno@0.58.5",
+    "@unocss/preset-icons": "https://esm.sh/@unocss/preset-icons@0.58.5",
+    "@unocss/transformer-variant-group": "https://esm.sh/@unocss/transformer-variant-group@0.58.5",
+    "$std/": "https://deno.land/std@0.211.0/",
+
+    "@ory/client": "https://esm.sh/@ory/client@1.6.2",
+    "@ory/integrations/": "https://esm.sh/@ory/integrations@1.1.5/"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  }
+}
