@@ -38,7 +38,11 @@ export function UINodeInputPassword(
             type="button"
             onClick={() => setVisible(!visible)}
             disabled
-            class="bg-transparent "
+            class="bg-transparent"
+            role="switch"
+            aria-checked={visible}
+            aria-description="Show password"
+            aria-controls={inputProps.id}
           >
             <div hidden={visible} class={`p-3 i-carbon-view`} />
             <div hidden={!visible} class={`p-3 i-carbon-view-off`} />

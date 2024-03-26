@@ -20,6 +20,11 @@ selfservice:
   methods:
     password:
       enabled: true
+      config:
+        haveibeenpwned_enabled: false
+        ignore_network_errors: true
+        min_password_length: 6
+        identifier_similarity_check_enabled: false
     totp:
       enabled: true
       config:
