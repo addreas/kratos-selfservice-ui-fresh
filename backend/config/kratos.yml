@@ -11,11 +11,14 @@ serve:
   admin:
     base_url: http://kratos:4434/
 
+oauth2_provider:
+  url: http://hydra:4445
+
 selfservice:
   default_browser_return_url: http://localhost:3000/
   allowed_return_urls:
     - http://localhost:3000
-    - http://localhost:3000/hydra/login
+    - http://localhost:3000/login
 
   methods:
     password:
@@ -65,7 +68,7 @@ selfservice:
 
     verification:
       enabled: true
-      ui_url: http://localhost:3000/settings/verification
+      ui_url: http://localhost:3000/verification
       after:
         default_browser_return_url: http://localhost:3000/
 

@@ -2,27 +2,21 @@ import md5 from "https://esm.sh/md5@2.3.0";
 
 import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 
-import { kratosFrontendApi } from "~/lib/ory.server.ts";
 import { getUserFullName } from "~/lib/user.server.ts";
 import { redirect } from "~/lib/redirect.ts";
+import { getSession } from "~/lib/get-session.ts";
+import { getLogoutUrl } from "~/lib/logout-url.ts";
 
 async function getIndexData(req: Request) {
-  const cookie = req.headers.get("cookie") ?? undefined;
-  const { logout_url: logoutUrl } = await kratosFrontendApi
-    .createBrowserLogoutFlow({ cookie })
-    .then((r) => r.data)
-    .catch((e) => {
-      console.error("kratos error, redirecting to login");
-      throw redirect("/login");
-    });
+  const logoutUrl = await getLogoutUrl(req).catch((e) => {
+    console.error("kratos error, redirecting to login");
+    throw redirect("/login");
+  });
 
-  const userInfo = await kratosFrontendApi
-    .toSession({ cookie })
-    .catch((e) => {
-      console.error("empty session, redirecting to login");
-      throw redirect("/login");
-    })
-    .then(({ data }) => data);
+  const userInfo = await getSession(req).catch((e) => {
+    console.error("session error, redirecting to login");
+    throw redirect("/login");
+  });
 
   const userId = userInfo.identity?.verifiable_addresses?.[0]?.value ?? null;
   const gravatarHash = userId ? md5(userId.toLowerCase()) : null;
@@ -36,7 +30,7 @@ async function getIndexData(req: Request) {
   };
 }
 
-export const handler = jiggleHandler(getIndexData);
+export const handler = jiggleHandler({ GET: getIndexData });
 export default function Index({ data }: JiggleProps<typeof getIndexData>) {
   const { logoutUrl, userInfo, gravatarHash, userFullName } = data;
   return (
@@ -59,22 +53,26 @@ export default function Index({ data }: JiggleProps<typeof getIndexData>) {
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               <MenuItem
                 icon="fa-user"
-                href="/settings/profile"
+                // href="/settings/profile"
+                href="/settings/#profile"
                 label="User profile"
               />
               <MenuItem
                 icon="fa-rotate-right"
-                href="/settings/password"
+                // href="/settings/password"
+                href="/settings/#password"
                 label="Change password"
               />
               <MenuItem
                 icon="fa-qrcode"
-                href="/settings/2fa"
+                // href="/settings/2fa"
+                href="/settings/#2fa"
                 label="Manage 2FA"
               />
               <MenuItem
                 icon="fa-ellipsis-h"
-                href="/settings/other"
+                // href="/settings/other"
+                href="/settings/#other"
                 label="Other settings"
               />
             </div>

@@ -6,16 +6,12 @@ export async function getFlowOrRedirectToInit<T>(
   request: Request,
   name: string,
   flowGetter: (flow: string, cookie: string) => Promise<{ data: T }>,
+  propagate: string[] = ["return_to"],
 ): Promise<T> {
   const params = new URL(request.url).searchParams;
   const flow = params.get("flow");
-  const return_to = params.get("return_to") ?? "";
 
-  const initFlowUrl = getUrlForFlow(
-    kratosBrowserUrl,
-    name,
-    new URLSearchParams({ return_to: return_to.toString() }),
-  );
+  const initFlowUrl = getUrlForFlowPropagated(request, name, propagate);
   const initFlowResponse = Response.redirect(initFlowUrl, 303);
 
   if (!flow) {
@@ -38,4 +34,24 @@ export async function getFlowOrRedirectToInit<T>(
       throw e;
     }
   }
+}
+
+export function getUrlForFlowPropagated(
+  request: Request,
+  name: string,
+  propagate: string[] = ["return_to"],
+  extra?: Record<string, string | undefined>,
+) {
+  const params = new URL(request.url).searchParams;
+
+  return getUrlForFlow(
+    kratosBrowserUrl,
+    name,
+    new URLSearchParams(
+      [
+        ...[...params.entries()].filter(([key, _]) => propagate.includes(key)),
+        ...Object.entries(extra ?? {}).filter(([_, value]) => !!value) as any,
+      ],
+    ),
+  );
 }
