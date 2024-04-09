@@ -1,34 +1,19 @@
 import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 
 import { kratosFrontendApi } from "~/lib/ory.server.ts";
-import { getFlowOrRedirectToInit } from "~/lib/flow.ts";
+import {
+  getFlowOrRedirectToInit,
+  getUrlForFlowPropagated,
+} from "~/lib/flow.ts";
 
-import { BasicUI } from "~/islands/BasicUI.tsx";
+import { UserAuthCard } from "@ory/elements-preact";
+import { ScriptNodes } from "~/islands/ScriptNodes.tsx";
 
-function getRouteData(req: Request) {
-  return getFlowOrRedirectToInit(
+async function getRouteData(req: Request) {
+  const flow = await getFlowOrRedirectToInit(
     req,
     "registration",
-    (id, cookie) =>
-      kratosFrontendApi.getRegistrationFlow({ id, cookie }).then((flow) => {
-        // const initLoginQuery = new URLSearchParams({
-        //   return_to:
-        //     (return_to && return_to.toString()) || flow.return_to || "",
-        // })
-        // if (flow.oauth2_login_request?.challenge) {
-        //   initLoginQuery.set(
-        //     "login_challenge",
-        //     flow.oauth2_login_request.challenge,
-        //   )
-        // }
-        // loginURL = getUrlForFlow(
-        //   kratosBrowserUrl,
-        //   "login",
-        //   initLoginQuery,
-        // ),
-
-        return flow;
-      }),
+    (id, cookie) => kratosFrontendApi.getRegistrationFlow({ id, cookie }),
     [
       "return_to",
       "organization",
@@ -36,18 +21,29 @@ function getRouteData(req: Request) {
       "login_challenge",
     ],
   );
+
+  const loginURL = getUrlForFlowPropagated(req, "login", ["return_to"], {
+    login_challenge: flow.oauth2_login_request?.challenge,
+  });
+
+  return {
+    flow,
+    loginURL,
+  };
 }
 
 export const handler = jiggleHandler({ GET: getRouteData });
-export default function Route({ data }: JiggleProps<typeof getRouteData>) {
+export default function Route(
+  { data: { flow, loginURL } }: JiggleProps<typeof getRouteData>,
+) {
   return (
-    <BasicUI
-      heading="Create an account"
-      ui={data.ui}
-      footerLinks={[{
-        href: "/",
-        text: "Home",
-      }]}
-    />
+    <>
+      <UserAuthCard
+        flow={flow}
+        flowType="registration"
+        additionalProps={{ loginURL }}
+      />
+      <ScriptNodes nodes={flow.ui.nodes} />
+    </>
   );
 }

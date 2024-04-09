@@ -1,71 +1,62 @@
-import { Handlers } from "$fresh/server.ts";
+import { redirect } from "~/lib/redirect.ts";
+import { hydraOauthApi } from "~/lib/ory.server.ts";
+import { UserLogoutCard } from "@ory/elements-preact";
+import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 
-export const handler: Handlers = {
-  GET(_req, _ctx) {
-    // const { logout_challenge: logoutChallenge } = req.query
+async function GET(req: Request) {
+  const params = new URL(req.url).searchParams;
+  if (!params.has("logout_challenge")) {
+    throw redirect("/login");
+  }
 
-    // if (typeof logoutChallenge !== "string") {
-    //   logger.debug("Expected a logout challenge to be set but received none.")
-    //   res.redirect("login")
-    //   return
-    // }
+  const logoutChallenge = params.get("logout_challenge")!;
 
-    // const { oauth2, shouldSkipLogoutConsent } = createHelpers(req, res)
-    // oauth2
-    //   .getOAuth2LogoutRequest({ logoutChallenge })
-    //   .then(({ data: body }) => {
-    //     if (shouldSkipLogoutConsent(body)) {
-    //       return oauth2
-    //         .acceptOAuth2LogoutRequest({ logoutChallenge })
-    //         .then(({ data: body }) => res.redirect(body.redirect_to))
-    //     }
+  const { data: body } = await hydraOauthApi.getOAuth2LogoutRequest({
+    logoutChallenge,
+  });
 
-    //     // this should never happen
-    //     if (!req.csrfToken) {
-    //       logger.warn(
-    //         "Expected CSRF token middleware to be set but received none.",
-    //       )
-    //       next(
-    //         new Error(
-    //           "Expected CSRF token middleware to be set but received none.",
-    //         ),
-    //       )
-    //       return
-    //     }
+  if ((body.client as any).skip_logout_consent) {
+    throw hydraOauthApi
+      .acceptOAuth2LogoutRequest({ logoutChallenge })
+      .then(({ data: body }) => redirect(body.redirect_to));
+  }
 
-    //     res.render("logout", {
-    //       card: UserLogoutCard({
-    //         csrfToken: req.csrfToken(true),
-    //         challenge: logoutChallenge,
-    //         action: "logout",
-    //       }),
-    //     })
-    //   })
-    //   .catch(() => res.redirect("login"))
+  return {
+    csrfToken: "TODO", // TODO
+    challenge: logoutChallenge,
+    action: "logout",
+  };
+}
 
-    return Response.json({ status: "ok" });
-  },
-  POST(_req, _ctx) {
-    //  // The challenge is now a hidden input field, so let's take it from
-    // // the request body instead.
-    // const { challenge: logoutChallenge, submit } = req.body
+async function POST(req: Request) {
+  const body = await req.formData();
+  const logoutChallenge = body.get("challenge") as string;
+  const submit = body.get("submit");
 
-    // if (submit === "No") {
-    //   logger.debug("User rejected to log out.")
-    //   // The user rejected to log out, so we'll redirect to /ui/welcome
-    //   return oauth2
-    //     .rejectOAuth2LogoutRequest({ logoutChallenge })
-    //     .then(() => res.redirect("login"))
-    //     .catch(() => res.redirect("login"))
-    // } else {
-    //   logger.debug("User agreed to log out.")
-    //   // The user agreed to log out, let's accept the logout request.
-    //   return oauth2
-    //     .acceptOAuth2LogoutRequest({ logoutChallenge })
-    //     .then(({ data: body }) => res.redirect(body.redirect_to))
-    //     .catch(() => res.redirect("login"))
-    // }
+  if (submit === "No") {
+    return hydraOauthApi
+      .rejectOAuth2LogoutRequest({ logoutChallenge })
+      .then(() => redirect("/login"))
+      .catch(() => redirect("/login"));
+  } else {
+    return hydraOauthApi
+      .acceptOAuth2LogoutRequest({ logoutChallenge })
+      .then(({ data: body }) => redirect(body.redirect_to))
+      .catch(() => redirect("/login"));
+  }
+}
 
-    return Response.json({ status: "ok" });
-  },
-};
+export const handler = jiggleHandler({ GET, POST });
+export default function Login(
+  { data: { csrfToken, challenge, action } }: JiggleProps<
+    typeof GET
+  >,
+) {
+  return (
+    <UserLogoutCard
+      challenge={challenge}
+      action={action}
+      csrfToken={csrfToken}
+    />
+  );
+}

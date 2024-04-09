@@ -1,29 +1,37 @@
 import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 
 import { kratosFrontendApi } from "~/lib/ory.server.ts";
-import { getFlowOrRedirectToInit } from "~/lib/flow.ts";
+import {
+  getFlowOrRedirectToInit,
+  getUrlForFlowPropagated,
+} from "~/lib/flow.ts";
 
-import { BasicUI } from "~/islands/BasicUI.tsx";
+import { UserAuthCard } from "@ory/elements-preact";
 
-function getRouteData(req: Request) {
-  return getFlowOrRedirectToInit(
+async function getRouteData(req: Request) {
+  const flow = await getFlowOrRedirectToInit(
     req,
     "recovery",
     (id, cookie) => kratosFrontendApi.getRecoveryFlow({ id, cookie }),
-    // TODO: login url
   );
+
+  const loginURL = getUrlForFlowPropagated(req, "login");
+
+  return {
+    flow,
+    loginURL,
+  };
 }
 
 export const handler = jiggleHandler({ GET: getRouteData });
-export default function Route({ data }: JiggleProps<typeof getRouteData>) {
+export default function Route(
+  { data: { flow, loginURL } }: JiggleProps<typeof getRouteData>,
+) {
   return (
-    <BasicUI
-      heading="Recovery"
-      ui={data.ui}
-      footerLinks={[{
-        href: "/",
-        text: "Home",
-      }]}
+    <UserAuthCard
+      flow={flow}
+      flowType="recovery"
+      additionalProps={{ loginURL }}
     />
   );
 }

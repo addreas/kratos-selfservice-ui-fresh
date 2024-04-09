@@ -33,7 +33,7 @@
 
     "@ory/client": "https://esm.sh/@ory/client@1.6.2",
     "@ory/integrations/": "https://esm.sh/@ory/integrations@1.1.5/",
-    "@ory/elements-preact": "https://esm.sh/@ory/elements-preact"
+    "@ory/elements-preact": "https://esm.sh/@ory/elements-preact@0.2.0"
   },
   "compilerOptions": {
     "jsx": "react-jsx",

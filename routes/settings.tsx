@@ -1,30 +1,43 @@
 import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 
 import { kratosFrontendApi } from "~/lib/ory.server.ts";
-import { getFlowOrRedirectToInit } from "~/lib/flow.ts";
+import { getLogoutUrl } from "~/lib/logout-url.ts";
+import {
+  getFlowOrRedirectToInit,
+  getUrlForFlowPropagated,
+} from "~/lib/flow.ts";
 
-import { BasicUI } from "~/islands/BasicUI.tsx";
+import { UserSettingsScreen } from "@ory/elements-preact";
+import { ScriptNodes } from "~/islands/ScriptNodes.tsx";
 
-function getRouteData(req: Request) {
-  return getFlowOrRedirectToInit(
+async function getRouteData(req: Request) {
+  const flow = await getFlowOrRedirectToInit(
     req,
     "settings",
     (id, cookie) => kratosFrontendApi.getSettingsFlow({ id, cookie }),
-    // TODO: logout url
-    // TODO: back: flow.return_to || url for login flow
   );
+  return {
+    flow,
+    logoutUrl: await getLogoutUrl(req),
+    backUrl: flow.return_to || getUrlForFlowPropagated(req, "login"),
+  };
 }
 
 export const handler = jiggleHandler({ GET: getRouteData });
-export default function Route({ data }: JiggleProps<typeof getRouteData>) {
+export default function Route(
+  { data: { flow, logoutUrl, backUrl } }: JiggleProps<typeof getRouteData>,
+) {
   return (
-    <BasicUI
-      heading="Settings"
-      ui={data.ui}
-      footerLinks={[{
-        href: "/",
-        text: "Home",
-      }]}
-    />
+    <>
+      <UserSettingsScreen.Nav
+        flow={flow}
+        logoutUrl={logoutUrl}
+        backUrl={backUrl}
+      />
+      <UserSettingsScreen.Body
+        flow={flow}
+      />
+      <ScriptNodes nodes={flow.ui.nodes} />
+    </>
   );
 }

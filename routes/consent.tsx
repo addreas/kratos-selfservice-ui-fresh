@@ -8,6 +8,7 @@ import { jiggleHandler, JiggleProps } from "~/lib/jiggle.ts";
 import { getSession } from "~/lib/get-session.ts";
 import { redirect } from "~/lib/redirect.ts";
 import { hydraOauthApi } from "~/lib/ory.server.ts";
+import { UserConsentCard } from "@ory/elements-preact";
 
 async function getRouteData(req: Request) {
   const params = new URL(req.url).searchParams;
@@ -57,14 +58,13 @@ async function getRouteData(req: Request) {
   // If consent can't be skipped we MUST show the consent UI.
   return {
     consent: body,
-    // TODO: csrfToken: req.csrfToken(true),
     client_name: body.client?.client_name ||
       body.client?.client_id ||
       "Unknown Client",
     requested_scope: body.requested_scope || [],
     client: body.client,
     action: "consent",
-    csrfToken: "TODO",
+    csrfToken: "TODO", // TODO: csrf token
   };
 }
 
@@ -141,95 +141,17 @@ export const handler = jiggleHandler({
   POST: postRouteData,
 });
 export default function Route({ data }: JiggleProps<typeof getRouteData>) {
-  const { consent: { challenge }, client, requested_scope, csrfToken } = data;
   return (
-    <div class="container max-w-screen-lg bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div class="stack gap-3">
-        <h1 class="text-lg">An application requests access to your data!</h1>
-        <form method="post">
-          <input type="hidden" name="challenge" value={challenge} />
-          <input type="hidden" name="csrfToken" value={csrfToken} />
-          {client?.logo_uri && <img src={client.logo_uri} />}
-
-          <h1 class="text-center">
-            {client?.client_name}
-          </h1>
-          <p>
-            The application requests access to the following permissions:
-          </p>
-          <div class="stack gap-3">
-            {requested_scope.map((scope) => (
-              <input
-                name="grant_scope"
-                type="checkbox"
-                id={scope}
-                value={scope}
-                defaultChecked
-              >
-                {scope}
-              </input>
-            ))}
-          </div>
-
-          <p class="text-xs">
-            Only grant permissions if you trust this site or app. You do not
-            need to accept all permissions.
-          </p>
-
-          <ul class="text-xs">
-            {client?.policy_uri && (
-              <li>
-                <a target="_blank" rel="noreferrer" href={client.policy_uri}>
-                  Privacy Policy
-                </a>
-              </li>
-            )}
-            {client?.tos_uri && (
-              <li>
-                <a target="_blank" rel="noreferrer" href={client.tos_uri}>
-                  Terms of Service
-                </a>
-              </li>
-            )}
-          </ul>
-
-          <div class="hstack gap-8">
-            <input
-              type="checkbox"
-              name="remember"
-              id="remember"
-              defaultChecked
-              title="remember my decision"
-            />
-            <p class="text-xs">
-              Remember this decision for next time. The application will not be
-              able to ask for additional permissions without your consent.
-            </p>
-          </div>
-
-          <div class="hstack gap-3 justify-between items-center">
-            <button
-              type="submit"
-              id="reject"
-              name="consent_action"
-              value="reject"
-              // variant="error"
-            >
-              Deny
-            </button>
-            <button
-              type="submit"
-              id="accept"
-              name="consent_action"
-              value="accept"
-              // variant="semibold"
-            >
-              Allow
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <UserConsentCard
+      consent={data.consent}
+      csrfToken={data.csrfToken}
+      // cardImage={data.client?.logo_uri || logoUrl}
+      client_name={data.client?.client_name || data.client?.client_id ||
+        "Unknown Client"}
+      requested_scope={data.requested_scope || []}
+      client={data.client}
+      action={"consent"}
+    />
   );
 }
 
